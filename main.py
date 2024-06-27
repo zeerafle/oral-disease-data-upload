@@ -49,16 +49,6 @@ if __name__ == "__main__":
         print('data directory does not exist')
         exit(-1)
 
-    labels_txt_path = os.path.join(os.getenv('DATA_DIR'), 'Caries_Gingivitus_ToothDiscoloration_Ulcer-yolo_annotated-Dataset', 'Caries_Gingivitus_ToothDiscoloration_Ulcer-yolo_annotated-Dataset', 'Data', 'labels', 'train', 'labels.txt')
-    if os.path.exists(os.path.split(labels_txt_path)[0]):
-        if 'labels.txt' not in os.listdir(os.path.split(labels_txt_path)[0]):
-            print('labels.txt already removed')
-        else:
-            os.remove(labels_txt_path)
-    else:
-        print('data directory does not exist')
-        exit(-1)
-
     print("Dataset downloaded and extracted")
 
     credentials = ApiKeyCredentials(in_headers={"Training-key": TRAINING_KEY})
