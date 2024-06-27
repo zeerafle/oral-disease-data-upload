@@ -9,7 +9,6 @@ from msrest.authentication import ApiKeyCredentials
 
 from oral.labels import Labels
 
-
 load_dotenv()
 
 ENDPOINT = os.getenv("VISION_TRAINING_ENDPOINT")
@@ -28,15 +27,27 @@ def download_dataset():
 def extract_dataset(data_dir: str):
     with zipfile.ZipFile("oral-diseases.zip", "r") as zip_ref:
         zip_ref.extractall(data_dir)
-    os.remove(os.path.join('data', 'Caries_Gingivitus_ToothDiscoloration_Ulcer-yolo_annotated-Dataset',
-                           'Caries_Gingivitus_ToothDiscoloration_Ulcer-yolo_annotated-Dataset', 'Data', 'labels',
-                           'train', 'labels.txt'))
 
 
 if __name__ == "__main__":
     if not os.path.exists("oral-diseases.zip"):
+        print('Downloading dataset')
         download_dataset()
+        print('Extracting dataset')
         extract_dataset(os.getenv("DATA_DIR"))
+    else:
+        print('Dataset already downloaded, extracting...')
+        extract_dataset(os.getenv("DATA_DIR"))
+
+    labels_txt_path = os.path.join(os.getenv('DATA_DIR'), 'Caries_Gingivitus_ToothDiscoloration_Ulcer-yolo_annotated-Dataset', 'Caries_Gingivitus_ToothDiscoloration_Ulcer-yolo_annotated-Dataset', 'Data', 'labels', 'train', 'labels.txt')
+    if os.path.exists(os.path.split(labels_txt_path)[0]):
+        if 'labels.txt' not in os.listdir(os.path.split(labels_txt_path)[0]):
+            print('labels.txt already removed')
+        else:
+            os.remove(labels_txt_path)
+    else:
+        print('data directory does not exist')
+        exit(-1)
 
     print("Dataset downloaded and extracted")
 
@@ -64,11 +75,11 @@ if __name__ == "__main__":
 
     # upload images
     # slice the list into batches of size 64
-    for i in range(0, len(labels.tagged_images_with_regions), 64):
-        print(i)
-        batch = labels.tagged_images_with_regions[i:i + 64]
-        upload_result = trainer.create_images_from_files(PROJECT_ID, ImageFileCreateBatch(images=batch))
-        if not upload_result.is_batch_successful:
-            print("Image batch upload failed")
-            for image in upload_result.images:
-                print("Image status: ", image.status)
+    # for i in range(0, len(labels.tagged_images_with_regions), 64):
+    #     print(i)
+    #     batch = labels.tagged_images_with_regions[i:i + 64]
+    #     upload_result = trainer.create_images_from_files(PROJECT_ID, ImageFileCreateBatch(images=batch))
+    #     if not upload_result.is_batch_successful:
+    #         print("Image batch upload failed")
+    #         for image in upload_result.images:
+    #             print("Image status: ", image.status)
