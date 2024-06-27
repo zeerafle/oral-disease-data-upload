@@ -75,11 +75,11 @@ if __name__ == "__main__":
 
     # upload images
     # slice the list into batches of size 64
-    # for i in range(0, len(labels.tagged_images_with_regions), 64):
-    #     print(i)
-    #     batch = labels.tagged_images_with_regions[i:i + 64]
-    #     upload_result = trainer.create_images_from_files(PROJECT_ID, ImageFileCreateBatch(images=batch))
-    #     if not upload_result.is_batch_successful:
-    #         print("Image batch upload failed")
-    #         for image in upload_result.images:
-    #             print("Image status: ", image.status)
+    for i in range(0, len(labels.tagged_images_with_regions), 64):
+        print(i)
+        batch = labels.tagged_images_with_regions[i:i + 64]
+        upload_result = trainer.create_images_from_files(PROJECT_ID, ImageFileCreateBatch(images=batch))
+        if not upload_result.is_batch_successful:
+            print("Image batch upload failed")
+            for image in upload_result.images:
+                print("Image status: ", image.status)
