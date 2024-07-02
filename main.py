@@ -7,7 +7,9 @@ from azure.cognitiveservices.vision.customvision.training import CustomVisionTra
 from azure.cognitiveservices.vision.customvision.training.models import CustomVisionErrorException, ImageFileCreateBatch
 from msrest.authentication import ApiKeyCredentials
 
+from oral.kaggle_data import KaggleData
 from oral.labels import Labels
+from oral.roboflow_data import RoboflowData
 
 load_dotenv()
 
@@ -17,64 +19,7 @@ DOMAIN_ID = os.getenv("DOMAIN_ID")
 PROJECT_ID = os.getenv("PROJECT_ID")
 
 
-def download_dataset():
-    command = "kaggle datasets download -d salmansajid05/oral-diseases"
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
-    process.wait()
-    print("Command executed, return code:", process.returncode)
-
-
-def extract_dataset(data_dir: str):
-    with zipfile.ZipFile("oral-diseases.zip", "r") as zip_ref:
-        zip_ref.extractall(data_dir)
-
-
-if __name__ == "__main__":
-    if not os.path.exists("oral-diseases.zip"):
-        print('Downloading dataset')
-        download_dataset()
-        print('Extracting dataset')
-        extract_dataset(os.getenv("DATA_DIR"))
-    else:
-        print('Dataset already downloaded, extracting...')
-        extract_dataset(os.getenv("DATA_DIR"))
-
-    labels_txt_path = os.path.join(os.getenv('DATA_DIR'), 'Caries_Gingivitus_ToothDiscoloration_Ulcer-yolo_annotated-Dataset', 'Caries_Gingivitus_ToothDiscoloration_Ulcer-yolo_annotated-Dataset', 'Data', 'labels', 'train', 'labels.txt')
-    if os.path.exists(os.path.split(labels_txt_path)[0]):
-        if 'labels.txt' not in os.listdir(os.path.split(labels_txt_path)[0]):
-            print('labels.txt already removed')
-        else:
-            os.remove(labels_txt_path)
-    else:
-        print('data directory does not exist')
-        exit(-1)
-
-    print("Dataset downloaded and extracted")
-
-    credentials = ApiKeyCredentials(in_headers={"Training-key": TRAINING_KEY})
-    trainer = CustomVisionTrainingClient(ENDPOINT, credentials)
-
-    # tagging images
-    labels = Labels()
-
-    tags = []
-    for class_name in labels.classes:
-        try:
-            tags.append(trainer.create_tag(PROJECT_ID, class_name))
-        except CustomVisionErrorException:
-            print(f"Tag {class_name} already exists")
-            continue
-
-    if not tags:
-        print("Tags already exist")
-        tags = trainer.get_tags(PROJECT_ID)
-
-    tag_name_to_id = {tag.name: tag.id for tag in tags}
-
-    labels.tag_images(tags=tag_name_to_id)
-
-    # upload images
-    # slice the list into batches of size 64
+def upload_images(labels: Labels):
     for i in range(0, len(labels.tagged_images_with_regions), 64):
         print(i)
         batch = labels.tagged_images_with_regions[i:i + 64]
@@ -83,3 +28,38 @@ if __name__ == "__main__":
             print("Image batch upload failed")
             for image in upload_result.images:
                 print("Image status: ", image.status)
+
+
+def get_tags(labels: Labels, cv_trainer: CustomVisionTrainingClient):
+    tags = []
+    for class_name in labels.classes:
+        try:
+            tags.append(cv_trainer.create_tag(PROJECT_ID, class_name))
+        except CustomVisionErrorException:
+            print(f"Tag {class_name} already exists")
+            continue
+
+    if not tags:
+        print("Tags already exist")
+        tags = cv_trainer.get_tags(PROJECT_ID)
+
+    return {tag.name: tag.id for tag in tags}
+
+
+if __name__ == "__main__":
+    credentials = ApiKeyCredentials(in_headers={"Training-key": TRAINING_KEY})
+    trainer = CustomVisionTrainingClient(ENDPOINT, credentials)
+
+    kaggle_data = KaggleData()
+    # kaggle_data.fetch()
+    tag_name_to_id = get_tags(kaggle_data, trainer)
+    # kaggle_data.tag_images(tags=tag_name_to_id)
+    # kaggle_data.tag_images(tags=tag_name_to_id, category='val')
+    # upload_images(kaggle_data)
+
+    roboflow_data = RoboflowData(os.path.join(os.getenv("DATA_DIR"), 'oral-diseases-2'))
+    roboflow_data.fetch(roboflow_data.rf)
+    roboflow_data.tag_images(tags=tag_name_to_id, category_first=True)
+    roboflow_data.tag_images(tags=tag_name_to_id, category_first=True, category='val')
+    roboflow_data.tag_images(tags=tag_name_to_id, category_first=True, category='test')
+    upload_images(roboflow_data)
