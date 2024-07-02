@@ -1,6 +1,4 @@
-import subprocess
 import os
-import zipfile
 from dotenv import load_dotenv
 
 from azure.cognitiveservices.vision.customvision.training import CustomVisionTrainingClient
@@ -51,11 +49,11 @@ if __name__ == "__main__":
     trainer = CustomVisionTrainingClient(ENDPOINT, credentials)
 
     kaggle_data = KaggleData()
-    kaggle_data.fetch()
+    # kaggle_data.fetch()
     tag_name_to_id = get_tags(kaggle_data, trainer)
-    kaggle_data.tag_images(tags=tag_name_to_id)
-    kaggle_data.tag_images(tags=tag_name_to_id, category='val')
-    upload_images(kaggle_data)
+    # kaggle_data.tag_images(tags=tag_name_to_id)
+    # kaggle_data.tag_images(tags=tag_name_to_id, category='val')
+    # upload_images(kaggle_data)
 
     roboflow_data = RoboflowData(os.path.join(os.getenv("DATA_DIR"), 'oral-diseases-2'))
     roboflow_data.fetch(roboflow_data.rf)
