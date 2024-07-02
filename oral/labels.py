@@ -3,6 +3,7 @@ import os
 
 from azure.cognitiveservices.vision.customvision.training.models import ImageFileCreateEntry, Region
 from globox import AnnotationSet
+import supervision as sv
 
 
 class Labels:
